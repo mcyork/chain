@@ -38,15 +38,28 @@ def create_chain_for(cert, certs):
         chain.append(get_subject(cert))
     return chain
 
+def load_replacements(template_path):
+    replacements = {}
+    with open(template_path, 'rt') as f:
+        for line in f:
+            if '=' in line:
+                original, replacement = line.strip().split('=', maxsplit=1)
+                replacements[original.lower()] = replacement.lower()
+    return replacements
 
-def write_chains(certs, output_directory):
+def apply_replacements(text, replacements):
+    for original, replacement in replacements.items():
+        text = text.replace(original, replacement)
+    return text
+
+def write_chains(certs, output_directory, replacements):
     for subject, cert in certs.items():
         chain = create_chain_for(cert, certs)
         expired = any(check_expiry(certs[cert]) for cert in chain)
         filename_parts = ["chain"]
         if expired:
             filename_parts.append("expired")
-        filename_parts.extend(cert.replace(' ', '') for cert in chain)
+        filename_parts.extend(apply_replacements(cert.replace(' ', '').lower(), replacements) for cert in chain)
         file_name = "-".join(filename_parts) + ".pem"
         file_path = os.path.join(output_directory, file_name)
         with open(file_path, "wt") as f:
@@ -56,9 +69,12 @@ def write_chains(certs, output_directory):
 def main():
     cert_directory = "."  # Directory where .cer files are located
     output_directory = "."  # Directory where chain .pem files should be written
+    template_path = "template.txt"  # Path to the template file for replacements
 
     certs = construct_chains(cert_directory)
-    write_chains(certs, output_directory)
+    replacements = load_replacements(template_path)
+    write_chains(certs, output_directory, replacements)
 
 if __name__ == "__main__":
     main()
+
