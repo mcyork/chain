@@ -45,7 +45,7 @@ def load_replacements(template_path):
         for line in f:
             if '=' in line:
                 original, replacement = line.strip().split('=', maxsplit=1)
-                replacements[original.lower()] = replacement.lower()
+                replacements[original] = replacement
     return replacements
 
 def apply_replacements(text, replacements):
