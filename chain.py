@@ -50,6 +50,7 @@ def load_replacements(template_path):
 def apply_replacements(text, replacements):
     for original, replacement in replacements.items():
         text = text.replace(original, replacement)
+    text = text.replace('--', '-')
     return text
 
 def write_chains(certs, output_directory, replacements):
