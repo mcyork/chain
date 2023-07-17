@@ -17,7 +17,7 @@ def get_issuer(cert):
 def check_expiry(cert):
     return datetime.strptime(cert.get_notAfter().decode('ascii'), '%Y%m%d%H%M%SZ') < datetime.utcnow()
 
-def construct_chain(cert_directory):
+def construct_chains(cert_directory):
     # Load all certificates
     certs = {}
     for file in os.listdir(cert_directory):
@@ -27,33 +27,35 @@ def construct_chain(cert_directory):
             subject = get_subject(cert)
             certs[subject] = cert
     
-    # Construct chains
-    chains = defaultdict(list)
-    for subject, cert in certs.items():
-        issuer = get_issuer(cert)
-        chains[issuer].append(subject)
-    
-    return chains, certs
+    return certs
 
-def write_chains(chains, certs, output_directory):
-    for issuer, subjects in chains.items():
-        expired = any(check_expiry(certs[subject]) for subject in subjects)
+def create_chain_for(cert, certs):
+    chain = [get_subject(cert)]
+    while get_subject(cert) != get_issuer(cert):
+        cert = certs[get_issuer(cert)]
+        chain.append(get_subject(cert))
+    return chain
+
+def write_chains(certs, output_directory):
+    for subject, cert in certs.items():
+        chain = create_chain_for(cert, certs)
+        expired = any(check_expiry(certs[cert]) for cert in chain)
         filename_parts = ["chain"]
         if expired:
             filename_parts.append("expired")
-        filename_parts.extend(subject.replace(' ', '') for subject in subjects)
+        filename_parts.extend(cert.replace(' ', '') for cert in chain)
         file_name = "-".join(filename_parts) + ".pem"
         file_path = os.path.join(output_directory, file_name)
         with open(file_path, "wt") as f:
-            for subject in subjects:
-                f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[subject]).decode())
+            for cert in chain:
+                f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
 
 def main():
     cert_directory = "."  # Directory where .cer files are located
     output_directory = "."  # Directory where chain .pem files should be written
 
-    chains, certs = construct_chain(cert_directory)
-    write_chains(chains, certs, output_directory)
+    certs = construct_chains(cert_directory)
+    write_chains(certs, output_directory)
 
 if __name__ == "__main__":
     main()
