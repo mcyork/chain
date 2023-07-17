@@ -2,6 +2,7 @@ import os
 from OpenSSL import crypto
 from collections import defaultdict
 from datetime import datetime
+import re
 
 def load_certificate(file_path):
     with open(file_path, "rt") as f:
@@ -49,7 +50,8 @@ def load_replacements(template_path):
 
 def apply_replacements(text, replacements):
     for original, replacement in replacements.items():
-        text = text.replace(original, replacement)
+        pattern = re.compile(re.escape(original), re.IGNORECASE)
+        text = pattern.sub(replacement, text)
     text = text.replace('--', '-')
     return text
 
