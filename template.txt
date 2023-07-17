@@ -1,0 +1,3 @@
+longcompanyname=lnc
+Digicert=digi
+repeatesalot=
