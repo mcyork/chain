@@ -79,7 +79,7 @@ def write_chains(certs, output_directory, replacements):
         filename_parts = ["chain"]
         if expired:
             filename_parts.append("expired")
-        filename_parts.extend(apply_replacements(cert[0].replace(' ', ''), replacements) for cert in chain)
+        filename_parts.extend(apply_replacements(subject.replace(' ', ''), replacements) for cert in chain)
         file_name = "-".join(filename_parts) + ".pem"
         file_path = os.path.join(output_directory, file_name)
         if chain:
