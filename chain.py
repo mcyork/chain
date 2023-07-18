@@ -4,10 +4,14 @@ from collections import defaultdict
 from datetime import datetime
 import re
 
-def load_certificate(file_path):
+def load_certificates(file_path):
     with open(file_path, "rt") as f:
         cert_str = f.read()
-    return crypto.load_certificate(crypto.FILETYPE_PEM, cert_str)
+    # Split the file into individual certificates
+    certs_str = cert_str.split("-----END CERTIFICATE-----")
+    certs = [crypto.load_certificate(crypto.FILETYPE_PEM, cert_str + "-----END CERTIFICATE-----")
+             for cert_str in certs_str if cert_str.strip()]
+    return certs
 
 def get_subject(cert):
     return cert.get_subject().CN
@@ -27,10 +31,11 @@ def construct_chains(cert_directory):
     for file in os.listdir(cert_directory):
         if file.endswith(".cer"):
             file_path = os.path.join(cert_directory, file)
-            cert = load_certificate(file_path)
-            subject = get_subject(cert)
-            serial_number = get_serial_number(cert)
-            certs[(subject, serial_number)] = cert
+            certificates = load_certificates(file_path)
+            for cert in certificates:
+                subject = get_subject(cert)
+                serial_number = get_serial_number(cert)
+                certs[(subject, serial_number)] = cert
 
     return certs
 
