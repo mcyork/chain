@@ -1,4 +1,3 @@
-
 import os
 from OpenSSL import crypto
 from collections import defaultdict
@@ -35,6 +34,8 @@ def create_chain_for(cert, certs):
     chain = [get_subject(cert)]
     while get_subject(cert) != get_issuer(cert):
         cert = certs[get_issuer(cert)]
+        if get_subject(cert) == get_issuer(cert):  # This is a Root CA
+            break
         chain.append(get_subject(cert))
     return chain
 
