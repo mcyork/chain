@@ -9,7 +9,7 @@ import re
 version = "2.0"
 
 def load_certificates(file_path):
-    logging.debug(f"Loading certificates from {file_path}")
+    logging.info(f"Loading certificates from {file_path}")
     with open(file_path, "rt") as f:
         cert_str = f.read()
     certs_str = cert_str.split("-----END CERTIFICATE-----")
@@ -40,7 +40,7 @@ def construct_chains(cert_directory):
                 subject = get_subject(cert)
                 serial_number = get_serial_number(cert)
                 certs[(subject, serial_number)] = cert
-    logging.debug(f"Constructed chains for {len(certs)} certificates")
+    logging.info(f"Constructed chains for {len(certs)} certificates")
     return certs
 
 def create_chain_for(cert, certs):
@@ -86,14 +86,14 @@ def write_chains(certs, output_directory, replacements):
             with open(file_path, "wt") as f:
                 for cert_key in chain:
                     f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert_key]).decode())
-            logging.debug(f"Wrote chain to {file_path}")
+            logging.info(f"Wrote chain to {file_path}")
         if not expired:  # Write individual certificate files only for non-expired certificates
             cert_filename_parts = ["cert", apply_replacements(subject.replace(' ', ''), replacements)]
             cert_file_name = "-".join(cert_filename_parts) + ".pem"
             cert_file_path = os.path.join(output_directory, cert_file_name)
             with open(cert_file_path, "wt") as f:
                 f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode())
-            logging.debug(f"Wrote certificate to {cert_file_path}")
+            logging.info(f"Wrote certificate to {cert_file_path}")
 
 def main():
     parser = argparse.ArgumentParser(description='Construct certificate chains.')
