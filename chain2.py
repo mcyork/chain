@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 import re
 
-version = "1.0"
+version = "2.0"
 
 def load_certificates(file_path):
     logging.debug(f"Loading certificates from {file_path}")
