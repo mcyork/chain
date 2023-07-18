@@ -79,7 +79,7 @@ def write_chains(certs, output_directory, replacements):
         filename_parts = ["chain"]
         if expired:
             filename_parts.append("expired")
-        filename_parts.extend(apply_replacements(subject.replace(' ', ''), replacements) for cert_key in chain)
+        filename_parts.extend(apply_replacements(get_subject(certs[cert_key]).replace(' ', ''), replacements) for cert_key in chain)
         file_name = "-".join(filename_parts) + ".pem"
         file_path = os.path.join(output_directory, file_name)
         if chain:
@@ -87,12 +87,13 @@ def write_chains(certs, output_directory, replacements):
                 for cert_key in chain:
                     f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert_key]).decode())
             logging.debug(f"Wrote chain to {file_path}")
-        cert_filename_parts = ["cert", apply_replacements(subject.replace(' ', ''), replacements), str(serial_number)]
-        cert_file_name = "-".join(cert_filename_parts) + ".pem"
-        cert_file_path = os.path.join(output_directory, cert_file_name)
-        with open(cert_file_path, "wt") as f:
-            f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode())
-        logging.debug(f"Wrote certificate to {cert_file_path}")
+        if not expired:  # Write individual certificate files only for non-expired certificates
+            cert_filename_parts = ["cert", apply_replacements(subject.replace(' ', ''), replacements)]
+            cert_file_name = "-".join(cert_filename_parts) + ".pem"
+            cert_file_path = os.path.join(output_directory, cert_file_name)
+            with open(cert_file_path, "wt") as f:
+                f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode())
+            logging.debug(f"Wrote certificate to {cert_file_path}")
 
 def main():
     parser = argparse.ArgumentParser(description='Construct certificate chains.')
