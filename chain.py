@@ -15,11 +15,11 @@ def get_subject(cert):
 def get_issuer(cert):
     return cert.get_issuer().CN
 
+def get_serial_number(cert):
+    return cert.get_serial_number()
+
 def check_expiry(cert):
-    is_expired = datetime.strptime(cert.get_notAfter().decode('ascii'), '%Y%m%d%H%M%SZ') < datetime.utcnow()
-    if is_expired:
-        print(f"Certificate {get_subject(cert)} is expired.")
-    return is_expired
+    return datetime.strptime(cert.get_notAfter().decode('ascii'), '%Y%m%d%H%M%SZ') < datetime.utcnow()
 
 def construct_chains(cert_directory):
     # Load all certificates
@@ -29,20 +29,18 @@ def construct_chains(cert_directory):
             file_path = os.path.join(cert_directory, file)
             cert = load_certificate(file_path)
             subject = get_subject(cert)
-            issuer = get_issuer(cert)
-            is_expired = check_expiry(cert)
-            print(f"Loaded certificate with subject {subject}, issuer {issuer}, expired: {is_expired}")
-            certs[subject] = cert
+            serial_number = get_serial_number(cert)
+            certs[(subject, serial_number)] = cert
 
     return certs
 
 def create_chain_for(cert, certs):
-    chain = [get_subject(cert)]
+    chain = [(get_subject(cert), get_serial_number(cert))]
     while get_subject(cert) != get_issuer(cert):
-        cert = certs[get_issuer(cert)]
+        cert = certs[(get_issuer(cert), get_serial_number(cert))]
         if get_subject(cert) == get_issuer(cert):  # This is a Root CA
             break
-        chain.append(get_subject(cert))
+        chain.append((get_subject(cert), get_serial_number(cert)))
     return chain
 
 def load_replacements(template_path):
@@ -62,8 +60,7 @@ def apply_replacements(text, replacements):
     return text
 
 def write_chains(certs, output_directory, replacements):
-    for subject, cert in certs.items():
-        print(f"Processing certificate with subject {subject}")
+    for (subject, serial_number), cert in certs.items():
         chain = create_chain_for(cert, certs)
         # Exclude the root certificate (last one in the chain)
         if get_subject(cert) == get_issuer(cert):
@@ -73,17 +70,14 @@ def write_chains(certs, output_directory, replacements):
         if expired:
             filename_parts.append("expired")
         # Remove conversion to lowercase to preserve the case of the certificate subjects in the file names
-        filename_parts.extend(apply_replacements(cert.replace(' ', ''), replacements) for cert in chain)
+        filename_parts.extend(apply_replacements(cert[0].replace(' ', ''), replacements) for cert in chain)
         file_name = "-".join(filename_parts) + ".pem"
         file_path = os.path.join(output_directory, file_name)
         # Only write files if the chain is not empty
         if chain:
-            print(f"Creating file {file_name} for chain {chain}.")
             with open(file_path, "wt") as f:
                 for cert in chain:
                     f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
-        else:
-            print(f"No chain found for certificate with subject {subject}")
 
 def main():
     cert_directory = "."  # Directory where .cer files are located
