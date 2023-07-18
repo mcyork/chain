@@ -1,4 +1,3 @@
-
 import os
 from OpenSSL import crypto
 from collections import defaultdict
