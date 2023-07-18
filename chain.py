@@ -16,7 +16,10 @@ def get_issuer(cert):
     return cert.get_issuer().CN
 
 def check_expiry(cert):
-    return datetime.strptime(cert.get_notAfter().decode('ascii'), '%Y%m%d%H%M%SZ') < datetime.utcnow()
+    is_expired = datetime.strptime(cert.get_notAfter().decode('ascii'), '%Y%m%d%H%M%SZ') < datetime.utcnow()
+    if is_expired:
+        print(f"Certificate {get_subject(cert)} is expired.")
+    return is_expired
 
 def construct_chains(cert_directory):
     # Load all certificates
@@ -71,6 +74,7 @@ def write_chains(certs, output_directory, replacements):
         file_path = os.path.join(output_directory, file_name)
         # Only write files if the chain is not empty
         if chain:
+            print(f"Creating file {file_name} for chain {chain}.")
             with open(file_path, "wt") as f:
                 for cert in chain:
                     f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
