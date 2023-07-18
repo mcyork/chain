@@ -29,6 +29,9 @@ def construct_chains(cert_directory):
             file_path = os.path.join(cert_directory, file)
             cert = load_certificate(file_path)
             subject = get_subject(cert)
+            issuer = get_issuer(cert)
+            is_expired = check_expiry(cert)
+            print(f"Loaded certificate with subject {subject}, issuer {issuer}, expired: {is_expired}")
             certs[subject] = cert
 
     return certs
@@ -60,6 +63,7 @@ def apply_replacements(text, replacements):
 
 def write_chains(certs, output_directory, replacements):
     for subject, cert in certs.items():
+        print(f"Processing certificate with subject {subject}")
         chain = create_chain_for(cert, certs)
         # Exclude the root certificate (last one in the chain)
         if get_subject(cert) == get_issuer(cert):
@@ -78,6 +82,8 @@ def write_chains(certs, output_directory, replacements):
             with open(file_path, "wt") as f:
                 for cert in chain:
                     f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
+        else:
+            print(f"No chain found for certificate with subject {subject}")
 
 def main():
     cert_directory = "."  # Directory where .cer files are located
