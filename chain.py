@@ -1,3 +1,4 @@
+
 import os
 from OpenSSL import crypto
 from collections import defaultdict
@@ -34,8 +35,6 @@ def create_chain_for(cert, certs):
     chain = [get_subject(cert)]
     while get_subject(cert) != get_issuer(cert):
         cert = certs[get_issuer(cert)]
-        if get_subject(cert) == get_issuer(cert):  # This is a Root CA
-            break
         chain.append(get_subject(cert))
     return chain
 
@@ -58,16 +57,22 @@ def apply_replacements(text, replacements):
 def write_chains(certs, output_directory, replacements):
     for subject, cert in certs.items():
         chain = create_chain_for(cert, certs)
+        # Exclude the root certificate (last one in the chain)
+        if get_subject(cert) == get_issuer(cert):
+            chain = chain[:-1]
         expired = any(check_expiry(certs[cert]) for cert in chain)
         filename_parts = ["chain"]
         if expired:
             filename_parts.append("expired")
+        # Remove conversion to lowercase to preserve the case of the certificate subjects in the file names
         filename_parts.extend(apply_replacements(cert.replace(' ', ''), replacements) for cert in chain)
         file_name = "-".join(filename_parts) + ".pem"
         file_path = os.path.join(output_directory, file_name)
-        with open(file_path, "wt") as f:
-            for cert in chain[:-1]:  # Exclude the last certificate in the chain (root)
-                f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
+        # Only write files if the chain is not empty
+        if chain:
+            with open(file_path, "wt") as f:
+                for cert in chain:
+                    f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
 
 def main():
     cert_directory = "."  # Directory where .cer files are located
