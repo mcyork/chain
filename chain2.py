@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 import re
 
-version = "2.0"
+version = "1.0"
 
 def load_certificates(file_path):
     logging.debug(f"Loading certificates from {file_path}")
@@ -87,7 +87,7 @@ def write_chains(certs, output_directory, replacements):
                 for cert in chain:
                     f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
             logging.debug(f"Wrote chain to {file_path}")
-        cert_filename_parts = ["cert", apply_replacements(get_subject(cert).replace(' ', ''), replacements), str(get_serial_number(cert))]
+        cert_filename_parts = ["cert", apply_replacements(subject.replace(' ', ''), replacements), str(serial_number)]
         cert_file_name = "-".join(cert_filename_parts) + ".pem"
         cert_file_path = os.path.join(output_directory, cert_file_name)
         with open(cert_file_path, "wt") as f:
