@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 import re
 
-version = "1.0"
+version = "2.0"
 
 def load_certificates(file_path):
     logging.debug(f"Loading certificates from {file_path}")
@@ -75,17 +75,17 @@ def write_chains(certs, output_directory, replacements):
         chain = create_chain_for(cert, certs)
         if get_subject(cert) == get_issuer(cert):
             chain = chain[:-1]
-        expired = any(check_expiry(certs[cert]) for cert in chain)
+        expired = any(check_expiry(certs[cert_key]) for cert_key in chain)
         filename_parts = ["chain"]
         if expired:
             filename_parts.append("expired")
-        filename_parts.extend(apply_replacements(subject.replace(' ', ''), replacements) for cert in chain)
+        filename_parts.extend(apply_replacements(subject.replace(' ', ''), replacements) for cert_key in chain)
         file_name = "-".join(filename_parts) + ".pem"
         file_path = os.path.join(output_directory, file_name)
         if chain:
             with open(file_path, "wt") as f:
-                for cert in chain:
-                    f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
+                for cert_key in chain:
+                    f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert_key]).decode())
             logging.debug(f"Wrote chain to {file_path}")
         cert_filename_parts = ["cert", apply_replacements(subject.replace(' ', ''), replacements), str(serial_number)]
         cert_file_name = "-".join(cert_filename_parts) + ".pem"
