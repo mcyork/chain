@@ -1,3 +1,4 @@
+
 import os
 from OpenSSL import crypto
 from collections import defaultdict
@@ -27,7 +28,7 @@ def construct_chains(cert_directory):
             cert = load_certificate(file_path)
             subject = get_subject(cert)
             certs[subject] = cert
-    
+
     return certs
 
 def create_chain_for(cert, certs):
@@ -62,11 +63,11 @@ def write_chains(certs, output_directory, replacements):
         filename_parts = ["chain"]
         if expired:
             filename_parts.append("expired")
-        filename_parts.extend(apply_replacements(cert.replace(' ', '').lower(), replacements) for cert in chain)
+        filename_parts.extend(apply_replacements(cert.replace(' ', ''), replacements) for cert in chain)
         file_name = "-".join(filename_parts) + ".pem"
         file_path = os.path.join(output_directory, file_name)
         with open(file_path, "wt") as f:
-            for cert in chain:
+            for cert in chain[:-1]:  # Exclude the last certificate in the chain (root)
                 f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, certs[cert]).decode())
 
 def main():
@@ -80,4 +81,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
